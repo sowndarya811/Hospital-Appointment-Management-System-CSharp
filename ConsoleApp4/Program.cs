@@ -1,50 +1,47 @@
 ﻿using Hospital_Appointment_Management_System.Models;
-namespace HospitalAppointmentManagement
+using Hospital_Appointment_Management_System.Services;
+using Hospital_Appointment_Management_System.UI;
+
+namespace Hospital_Appointment_Management_System
 {
     public class Program
     {
         static void Main(string[] args)
         {
-          
-            Patient patient=new Patient(
-                "P001",
-                "Sowndarya",
-                21,
-                "9876543210",
-                "sowndarya@gmail.com"
-            );
-            Doctor doctor=new Doctor(
-                "D001",
-                "Dr. Kumar",
-                "Cardiology",
-                800
-            );
-            Appointment appointment=new Appointment(
-                "A001",
-                patient.PersonId,
-                doctor.PersonId,
-                DateTime.Now.AddDays(1),
-                "Regular Consultation"
-            );
-            Console.WriteLine("================================");
-            Console.WriteLine("          PATIENT DETAILS");
-            Console.WriteLine("================================");
-            patient.DisplayInfo();
-            Console.WriteLine("\n================================");
-            Console.WriteLine("          DOCTOR DETAILS");
-            Console.WriteLine("================================");
-            doctor.DisplayInfo();
-            Console.WriteLine("\n================================");
-            Console.WriteLine("       APPOINTMENT DETAILS");
-            Console.WriteLine("================================");
-            Console.WriteLine($"Appointment ID:{appointment.AppointmentId}");
-            Console.WriteLine($"Patient ID:{appointment.PatientId}");
-            Console.WriteLine($"Doctor ID:{appointment.DoctorId}");
-            Console.WriteLine($"Date & Time:{appointment.AppointmentDateTime}");
-            Console.WriteLine($"Reason:{appointment.Reason}");
-            Console.WriteLine($"Status:{appointment.Status}");
-            Console.WriteLine("\nPress any key to exit...");
-            Console.ReadKey();
+            // Create repositories
+            IRepository<Patient> patientRepository =
+                new Repository<Patient>(p => p.PersonId);
+
+            IRepository<Doctor> doctorRepository =
+                new Repository<Doctor>(d => d.PersonId);
+
+            IRepository<Appointment> appointmentRepository =
+                new Repository<Appointment>(a => a.AppointmentId);
+
+            // Create services
+            PatientService patientService =
+                new PatientService(patientRepository);
+
+            DoctorService doctorService =
+                new DoctorService(doctorRepository);
+
+            AppointmentService appointmentService =
+                new AppointmentService(appointmentRepository);
+
+            ReportService reportService =
+                new ReportService(
+                    appointmentRepository,
+                    doctorRepository);
+
+            // Create Menu
+            Menu menu = new Menu(
+                patientService,
+                doctorService,
+                appointmentService,
+                reportService);
+
+            // Start application
+            menu.Show();
         }
     }
 }
