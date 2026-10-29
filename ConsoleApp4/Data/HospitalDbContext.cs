@@ -5,19 +5,17 @@ namespace Hospital_Appointment_Management_System.Data
 {
     public class HospitalDbContext : DbContext
     {
-        // Parameterless constructor
         public HospitalDbContext()
         {
         }
 
-        // Constructor for Dependency Injection - we will use this later
         public HospitalDbContext(
             DbContextOptions<HospitalDbContext> options)
             : base(options)
         {
         }
 
-        // Tables
+        public DbSet<Person> Persons { get; set; }
         public DbSet<Patient> Patients { get; set; }
         public DbSet<Doctor> Doctors { get; set; }
         public DbSet<Appointment> Appointments { get; set; }
@@ -40,7 +38,7 @@ namespace Hospital_Appointment_Management_System.Data
         {
             base.OnModelCreating(modelBuilder);
 
-            // Person primary key
+            // Person
             modelBuilder.Entity<Person>()
                 .HasKey(p => p.PersonId);
 
@@ -53,11 +51,11 @@ namespace Hospital_Appointment_Management_System.Data
                 .Property(p => p.PhoneNumber)
                 .IsRequired();
 
-            // Doctor
-            modelBuilder.Entity<Doctor>()
-                .Property(d => d.FullName)
-                .IsRequired();
+            modelBuilder.Entity<Patient>()
+                .Property(p => p.Email)
+                .IsRequired(false);
 
+            // Doctor
             modelBuilder.Entity<Doctor>()
                 .Property(d => d.Specialization)
                 .IsRequired();
@@ -66,42 +64,31 @@ namespace Hospital_Appointment_Management_System.Data
                 .Property(d => d.ConsultationFee)
                 .HasColumnType("decimal(18,2)");
 
-            // Appointment primary key
+            // Appointment
             modelBuilder.Entity<Appointment>()
                 .HasKey(a => a.AppointmentId);
-
-            modelBuilder.Entity<Appointment>()
-                .Property(a => a.PatientId)
-                .IsRequired();
-
-            modelBuilder.Entity<Appointment>()
-                .Property(a => a.DoctorId)
-                .IsRequired();
 
             modelBuilder.Entity<Appointment>()
                 .Property(a => a.Reason)
                 .IsRequired();
 
+            modelBuilder.Entity<Appointment>()
+                .Property(a => a.Status)
+                .HasConversion<string>();
+
             // Appointment -> Patient
             modelBuilder.Entity<Appointment>()
-                .HasOne<Patient>()
-                .WithMany()
+                .HasOne(a => a.Patient)
+                .WithMany(p => p.Appointments)
                 .HasForeignKey(a => a.PatientId)
-                .HasPrincipalKey(p => p.PersonId)
                 .OnDelete(DeleteBehavior.Restrict);
 
             // Appointment -> Doctor
             modelBuilder.Entity<Appointment>()
-                .HasOne<Doctor>()
-                .WithMany()
+                .HasOne(a => a.Doctor)
+                .WithMany(d => d.Appointments)
                 .HasForeignKey(a => a.DoctorId)
-                .HasPrincipalKey(d => d.PersonId)
                 .OnDelete(DeleteBehavior.Restrict);
-
-            // Store enum as text
-            modelBuilder.Entity<Appointment>()
-                .Property(a => a.Status)
-                .HasConversion<string>();
         }
     }
 }

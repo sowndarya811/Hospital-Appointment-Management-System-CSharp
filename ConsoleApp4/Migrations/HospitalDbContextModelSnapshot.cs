@@ -71,7 +71,7 @@ namespace Hospital_Appointment_Management_System.Migrations
 
                     b.HasKey("PersonId");
 
-                    b.ToTable("Person");
+                    b.ToTable("Persons");
 
                     b.HasDiscriminator<string>("Discriminator").HasValue("Person");
 
@@ -111,17 +111,31 @@ namespace Hospital_Appointment_Management_System.Migrations
 
             modelBuilder.Entity("Hospital_Appointment_Management_System.Models.Appointment", b =>
                 {
-                    b.HasOne("Hospital_Appointment_Management_System.Models.Doctor", null)
-                        .WithMany()
+                    b.HasOne("Hospital_Appointment_Management_System.Models.Doctor", "Doctor")
+                        .WithMany("Appointments")
                         .HasForeignKey("DoctorId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.HasOne("Hospital_Appointment_Management_System.Models.Patient", null)
-                        .WithMany()
+                    b.HasOne("Hospital_Appointment_Management_System.Models.Patient", "Patient")
+                        .WithMany("Appointments")
                         .HasForeignKey("PatientId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
+
+                    b.Navigation("Doctor");
+
+                    b.Navigation("Patient");
+                });
+
+            modelBuilder.Entity("Hospital_Appointment_Management_System.Models.Doctor", b =>
+                {
+                    b.Navigation("Appointments");
+                });
+
+            modelBuilder.Entity("Hospital_Appointment_Management_System.Models.Patient", b =>
+                {
+                    b.Navigation("Appointments");
                 });
 #pragma warning restore 612, 618
         }

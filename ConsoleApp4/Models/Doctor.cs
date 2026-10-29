@@ -1,17 +1,20 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Text;
 
 namespace Hospital_Appointment_Management_System.Models
 {
-    public class Doctor:Person
+    public class Doctor : Person
     {
-        public string Specialization{get;set;}
+        public string Specialization { get; set; }
         public decimal ConsultationFee { get; set; }
+
+        // Navigation property
+        public ICollection<Appointment> Appointments { get; set; }
 
         public Doctor()
         {
-            Specialization=string.Empty;
+            Specialization = string.Empty;
+            Appointments = new List<Appointment>();
         }
 
         public Doctor(
@@ -19,18 +22,19 @@ namespace Hospital_Appointment_Management_System.Models
             string fullName,
             string specialization,
             decimal consultationFee)
-            :base(doctorId,fullName)
+            : base(doctorId, fullName)
         {
-            Specialization=specialization;
-            ConsultationFee=consultationFee;
+            Specialization = specialization;
+            ConsultationFee = consultationFee;
+            Appointments = new List<Appointment>();
         }
 
         public override void DisplayInfo()
         {
-            Console.WriteLine($"Doctor ID:{PersonId}");
-            Console.WriteLine($"Doctor Name:{FullName}");
-            Console.WriteLine($"Specialization:{Specialization}");
-            Console.WriteLine($"Consultation Fee:{ConsultationFee:C}");
+            Console.WriteLine($"Doctor ID: {PersonId}");
+            Console.WriteLine($"Doctor Name: {FullName}");
+            Console.WriteLine($"Specialization: {Specialization}");
+            Console.WriteLine($"Consultation Fee: {ConsultationFee:C}");
         }
     }
 }
