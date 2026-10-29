@@ -1,44 +1,41 @@
-﻿using Hospital_Appointment_Management_System.Models;
+﻿using Hospital_Appointment_Management_System.Data;
+using Hospital_Appointment_Management_System.Models;
+using Hospital_Appointment_Management_System.Repositories;
 using Hospital_Appointment_Management_System.Services;
 using Hospital_Appointment_Management_System.UI;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 
 namespace Hospital_Appointment_Management_System
 {
     public class Program
     {
-        static void Main(string[] args)
+        public static void Main(string[] args)
         {
-            // Create repositories
-            IRepository<Patient> patientRepository =
-                new Repository<Patient>(p => p.PersonId);
+            var builder = Host.CreateApplicationBuilder(args);
 
-            IRepository<Doctor> doctorRepository =
-                new Repository<Doctor>(d => d.PersonId);
+            // Register DbContext
+            builder.Services.AddDbContext<HospitalDbContext>();
 
-            IRepository<Appointment> appointmentRepository =
-                new Repository<Appointment>(a => a.AppointmentId);
+            // Register Repositories
+            builder.Services.AddScoped<IRepository<Patient>, PatientRepository>();
+            builder.Services.AddScoped<IRepository<Doctor>, DoctorRepository>();
+            builder.Services.AddScoped<IRepository<Appointment>, AppointmentRepository>();
 
-            // Create services
-            PatientService patientService =
-                new PatientService(patientRepository);
+            // Register Services
+            builder.Services.AddScoped<PatientService>();
+            builder.Services.AddScoped<DoctorService>();
+            builder.Services.AddScoped<AppointmentService>();
+            builder.Services.AddScoped<ReportService>();
 
-            DoctorService doctorService =
-                new DoctorService(doctorRepository);
+            // Register Menu
+            builder.Services.AddScoped<Menu>();
 
-            AppointmentService appointmentService =
-                new AppointmentService(appointmentRepository);
+            // Build application
+            var app = builder.Build();
 
-            ReportService reportService =
-                new ReportService(
-                    appointmentRepository,
-                    doctorRepository);
-
-            // Create Menu
-            Menu menu = new Menu(
-                patientService,
-                doctorService,
-                appointmentService,
-                reportService);
+            // Resolve Menu from Dependency Injection
+            var menu = app.Services.GetRequiredService<Menu>();
 
             // Start application
             menu.Show();
