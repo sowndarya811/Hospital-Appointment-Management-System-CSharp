@@ -22,11 +22,17 @@ namespace Hospital_Appointment_Management_System
             builder.Services.AddScoped<IRepository<Doctor>, DoctorRepository>();
             builder.Services.AddScoped<IRepository<Appointment>, AppointmentRepository>();
 
+            // Register Audit Log Repository
+            builder.Services.AddScoped<AuditLogRepository>();
+
             // Register Services
             builder.Services.AddScoped<PatientService>();
             builder.Services.AddScoped<DoctorService>();
             builder.Services.AddScoped<AppointmentService>();
             builder.Services.AddScoped<ReportService>();
+
+            // Register Audit Log Service
+            builder.Services.AddScoped<AuditLogService>();
 
             // Register Menu
             builder.Services.AddScoped<Menu>();
@@ -34,8 +40,8 @@ namespace Hospital_Appointment_Management_System
             // Build application
             var app = builder.Build();
 
-            // Resolve Menu from Dependency Injection
-            var menu = app.Services.GetRequiredService<Menu>();
+            // Get Menu from Dependency Injection
+            Menu menu = app.Services.GetRequiredService<Menu>();
 
             // Start application
             menu.Show();

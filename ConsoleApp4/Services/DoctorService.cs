@@ -5,141 +5,127 @@ namespace Hospital_Appointment_Management_System.Services
 {
     public class DoctorService
     {
-        private readonly IRepository<Doctor> repo;
+        private readonly IRepository<Doctor> _repository;
+        private readonly AuditLogService _auditLogService;
 
         public DoctorService(
-            IRepository<Doctor> repo)
+            IRepository<Doctor> repository,
+            AuditLogService auditLogService)
         {
-            this.repo = repo;
+            _repository = repository;
+            _auditLogService = auditLogService;
         }
 
         public void AddDoctor(Doctor doctor)
         {
             if (doctor == null)
-            {
-                throw new HospitalException(
-                    "Doctor cannot be null.");
-            }
+                throw new HospitalException("Doctor cannot be null.");
 
-            if (string.IsNullOrWhiteSpace(
-                doctor.PersonId))
-            {
-                throw new HospitalException(
-                    "Doctor ID cannot be empty.");
-            }
+            if (string.IsNullOrWhiteSpace(doctor.PersonId))
+                throw new HospitalException("Doctor ID is required.");
 
-            if (string.IsNullOrWhiteSpace(
-                doctor.FullName))
-            {
-                throw new HospitalException(
-                    "Doctor name cannot be empty.");
-            }
+            if (string.IsNullOrWhiteSpace(doctor.FullName))
+                throw new HospitalException("Doctor name is required.");
 
-            if (string.IsNullOrWhiteSpace(
-                doctor.Specialization))
-            {
+            if (string.IsNullOrWhiteSpace(doctor.Specialization))
                 throw new HospitalException(
-                    "Specialization cannot be empty.");
-            }
+                    "Doctor specialization is required.");
 
             if (doctor.ConsultationFee < 0)
-            {
                 throw new HospitalException(
                     "Consultation fee cannot be negative.");
-            }
 
-            if (repo.GetById(
-                doctor.PersonId) != null)
-            {
+            if (_repository.GetById(doctor.PersonId) != null)
                 throw new HospitalException(
-                    "Doctor ID already exists.");
-            }
+                    $"Doctor with ID {doctor.PersonId} already exists.");
 
-            repo.Add(doctor);
+            _repository.Add(doctor);
+
+            _auditLogService.Log(
+                "CREATE",
+                "Doctor",
+                doctor.PersonId,
+                $"Doctor {doctor.FullName} was created.");
         }
 
+        // IMPORTANT: Menu.cs uses GetAll()
         public List<Doctor> GetAll()
         {
-            return repo.GetAll();
+            return _repository.GetAll();
         }
 
-        public Doctor? GetById(string id)
+        // IMPORTANT: Menu.cs uses Search()
+        public List<Doctor> Search(string searchText)
         {
-            return repo.GetById(id);
-        }
-
-        public List<Doctor> Search(string value)
-        {
-            if (string.IsNullOrWhiteSpace(value))
-            {
+            if (string.IsNullOrWhiteSpace(searchText))
                 return new List<Doctor>();
-            }
 
-            return repo.GetAll()
+            return _repository
+                .GetAll()
                 .Where(d =>
                     d.FullName.Contains(
-                        value,
+                        searchText,
                         StringComparison.OrdinalIgnoreCase)
                     ||
                     d.Specialization.Contains(
-                        value,
+                        searchText,
                         StringComparison.OrdinalIgnoreCase))
                 .ToList();
         }
 
+        // IMPORTANT: Menu.cs uses Update()
         public void Update(
             string id,
             string name,
             string specialization,
-            decimal fee)
+            decimal consultationFee)
         {
-            Doctor? doctor =
-                repo.GetById(id);
+            Doctor? existingDoctor = _repository.GetById(id);
 
-            if (doctor == null)
-            {
+            if (existingDoctor == null)
                 throw new HospitalException(
-                    "Doctor not found.");
-            }
+                    $"Doctor with ID {id} not found.");
 
             if (string.IsNullOrWhiteSpace(name))
-            {
-                throw new HospitalException(
-                    "Doctor name cannot be empty.");
-            }
+                throw new HospitalException("Doctor name is required.");
 
-            if (string.IsNullOrWhiteSpace(
-                specialization))
-            {
+            if (string.IsNullOrWhiteSpace(specialization))
                 throw new HospitalException(
-                    "Specialization cannot be empty.");
-            }
+                    "Doctor specialization is required.");
 
-            if (fee < 0)
-            {
+            if (consultationFee < 0)
                 throw new HospitalException(
                     "Consultation fee cannot be negative.");
-            }
 
-            doctor.FullName = name;
-            doctor.Specialization = specialization;
-            doctor.ConsultationFee = fee;
+            existingDoctor.FullName = name;
+            existingDoctor.Specialization = specialization;
+            existingDoctor.ConsultationFee = consultationFee;
 
-            repo.Update(doctor);
+            _repository.Update(existingDoctor);
+
+            _auditLogService.Log(
+                "UPDATE",
+                "Doctor",
+                existingDoctor.PersonId,
+                $"Doctor {existingDoctor.FullName} was updated.");
         }
 
+        // IMPORTANT: Menu.cs uses Delete()
         public void Delete(string id)
         {
-            Doctor? doctor =
-                repo.GetById(id);
+            Doctor? doctor = _repository.GetById(id);
 
             if (doctor == null)
-            {
                 throw new HospitalException(
-                    "Doctor not found.");
-            }
+                    $"Doctor with ID {id} not found.");
 
-            repo.Delete(id);
+            _repository.Delete(id);
+
+            _auditLogService.Log(
+                "DELETE",
+                "Doctor",
+                id,
+                $"Doctor {doctor.FullName} was deleted.");
         }
     }
 }

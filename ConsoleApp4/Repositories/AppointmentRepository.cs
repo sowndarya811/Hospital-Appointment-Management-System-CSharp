@@ -13,7 +13,7 @@ namespace Hospital_Appointment_Management_System.Repositories
         {
             _context = context;
         }
-
+            
         public void Add(Appointment item)
         {
             _context.Set<Appointment>().Add(item);

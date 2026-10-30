@@ -1,115 +1,131 @@
-﻿using Hospital_Appointment_Management_System.Models;
-using Hospital_Appointment_Management_System.Exceptions;
-using System;
-using System.Collections.Generic;
-using System.Text;
+﻿using Hospital_Appointment_Management_System.Exceptions;
+using Hospital_Appointment_Management_System.Models;
+
 namespace Hospital_Appointment_Management_System.Services
 {
     public class PatientService
     {
         private readonly IRepository<Patient> _repository;
-        public PatientService(IRepository<Patient> repository)
+        private readonly AuditLogService _auditLogService;
+
+        public PatientService(
+            IRepository<Patient> repository,
+            AuditLogService auditLogService)
         {
-            _repository=repository;
+            _repository = repository;
+            _auditLogService = auditLogService;
         }
+
         public void AddPatient(Patient patient)
         {
-            if (patient==null)
-            {
-                throw new HospitalException(
-                    "Patient cannot be null.");
-            }
+            if (patient == null)
+                throw new HospitalException("Patient cannot be null.");
+
             if (string.IsNullOrWhiteSpace(patient.PersonId))
-            {
-                throw new HospitalException(
-                    "Patient ID cannot be empty.");
-            }
+                throw new HospitalException("Patient ID is required.");
+
             if (string.IsNullOrWhiteSpace(patient.FullName))
-            {
-                throw new HospitalException(
-                    "Patient name cannot be empty.");
-            }
-            if (patient.Age<0||patient.Age>120)
-            {
+                throw new HospitalException("Patient name is required.");
+
+            if (patient.Age < 0 || patient.Age > 120)
                 throw new HospitalException(
                     "Patient age must be between 0 and 120.");
-            }
+
             if (string.IsNullOrWhiteSpace(patient.PhoneNumber))
-            {
+                throw new HospitalException("Phone number is required.");
+
+            if (_repository.GetById(patient.PersonId) != null)
                 throw new HospitalException(
-                    "Phone number cannot be empty.");
-            }
-            if(_repository.GetById(patient.PersonId)!=null)
-            {
-                throw new HospitalException(
-                    "Patient ID already exists.");
-            }
+                    $"Patient with ID {patient.PersonId} already exists.");
+
             _repository.Add(patient);
+
+            _auditLogService.Log(
+                "CREATE",
+                "Patient",
+                patient.PersonId,
+                $"Patient {patient.FullName} was created.");
         }
-        public List<Patient>GetAllPatients()
+
+        public List<Patient> GetAllPatients()
         {
             return _repository.GetAll();
         }
+
         public Patient? GetPatientById(string id)
         {
+            if (string.IsNullOrWhiteSpace(id))
+                throw new HospitalException("Patient ID is required.");
+
             return _repository.GetById(id);
         }
-        public List<Patient>SearchPatients(string name)
+
+        public List<Patient> SearchPatients(string searchText)
         {
-            if (string.IsNullOrWhiteSpace(name))
-            {
+            if (string.IsNullOrWhiteSpace(searchText))
                 return new List<Patient>();
-            }
+
             return _repository
                 .GetAll()
-                .Where(p=>p.FullName.Contains(
-                    name,
-                    StringComparison.OrdinalIgnoreCase))
+                .Where(p =>
+                    p.FullName.Contains(
+                        searchText,
+                        StringComparison.OrdinalIgnoreCase))
                 .ToList();
         }
+
         public void UpdatePatient(
             string id,
-            string fullName,
+            string name,
             int age,
-            string phoneNumber,
-            string?email)
+            string phone,
+            string? email)
         {
-            Patient? patient=_repository.GetById(id);
-            if(patient==null)
-            {
+            Patient? existingPatient = _repository.GetById(id);
+
+            if (existingPatient == null)
                 throw new HospitalException(
-                    "Patient not found.");
-            }
-            if (string.IsNullOrWhiteSpace(fullName))
-            {
-                throw new HospitalException(
-                    "Patient name cannot be empty.");
-            }
-            if (age<0||age>120)
-            {
+                    $"Patient with ID {id} not found.");
+
+            if (string.IsNullOrWhiteSpace(name))
+                throw new HospitalException("Patient name is required.");
+
+            if (age < 0 || age > 120)
                 throw new HospitalException(
                     "Patient age must be between 0 and 120.");
-            }
-            if (string.IsNullOrWhiteSpace(phoneNumber))
-            {
-                throw new HospitalException(
-                    "Phone number cannot be empty.");
-            }
-            patient.FullName = fullName;
-            patient.Age = age;
-            patient.PhoneNumber = phoneNumber;
-            patient.Email = email;
-            _repository.Update(patient);
+
+            if (string.IsNullOrWhiteSpace(phone))
+                throw new HospitalException("Phone number is required.");
+
+            existingPatient.FullName = name;
+            existingPatient.Age = age;
+            existingPatient.PhoneNumber = phone;
+            existingPatient.Email = email;
+
+            _repository.Update(existingPatient);
+
+            _auditLogService.Log(
+                "UPDATE",
+                "Patient",
+                existingPatient.PersonId,
+                $"Patient {existingPatient.FullName} was updated.");
         }
+
         public void DeletePatient(string id)
         {
-            Patient?patient=_repository.GetById(id);
-            if (patient==null)
-            {
+            Patient? patient = _repository.GetById(id);
+
+            if (patient == null)
                 throw new HospitalException(
-                    "Patient not found.");
-            }
+                    $"Patient with ID {id} not found.");
+
             _repository.Delete(id);
+
+            _auditLogService.Log(
+                "DELETE",
+                "Patient",
+                id,
+                $"Patient {patient.FullName} was deleted.");
         }
     }
 }

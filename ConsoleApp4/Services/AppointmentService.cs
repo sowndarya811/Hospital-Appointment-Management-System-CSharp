@@ -5,162 +5,151 @@ namespace Hospital_Appointment_Management_System.Services
 {
     public class AppointmentService
     {
-        private readonly IRepository<Appointment> repo;
+        private readonly IRepository<Appointment> _repository;
+        private readonly AuditLogService _auditLogService;
 
         public AppointmentService(
-            IRepository<Appointment> repo)
+            IRepository<Appointment> repository,
+            AuditLogService auditLogService)
         {
-            this.repo = repo;
+            _repository = repository;
+            _auditLogService = auditLogService;
         }
 
-        public void AddAppointment(
-            Appointment appointment)
+        // Add Appointment
+        public void AddAppointment(Appointment appointment)
         {
             if (appointment == null)
-            {
                 throw new HospitalException(
                     "Appointment cannot be null.");
-            }
 
-            if (string.IsNullOrWhiteSpace(
-                appointment.AppointmentId))
-            {
+            if (string.IsNullOrWhiteSpace(appointment.AppointmentId))
                 throw new HospitalException(
-                    "Appointment ID cannot be empty.");
-            }
+                    "Appointment ID is required.");
 
-            if (string.IsNullOrWhiteSpace(
-                appointment.PatientId))
-            {
+            if (string.IsNullOrWhiteSpace(appointment.PatientId))
                 throw new HospitalException(
-                    "Patient ID cannot be empty.");
-            }
+                    "Patient ID is required.");
 
-            if (string.IsNullOrWhiteSpace(
-                appointment.DoctorId))
-            {
+            if (string.IsNullOrWhiteSpace(appointment.DoctorId))
                 throw new HospitalException(
-                    "Doctor ID cannot be empty.");
-            }
+                    "Doctor ID is required.");
 
-            if (string.IsNullOrWhiteSpace(
-                appointment.Reason))
-            {
+            if (appointment.AppointmentDateTime <= DateTime.Now)
                 throw new HospitalException(
-                    "Appointment reason cannot be empty.");
-            }
+                    "Appointment date and time must be in the future.");
 
-            if (repo.GetById(
-                appointment.AppointmentId) != null)
-            {
+            if (string.IsNullOrWhiteSpace(appointment.Reason))
                 throw new HospitalException(
-                    "Appointment ID already exists.");
-            }
+                    "Appointment reason is required.");
 
-            if (appointment.AppointmentDateTime
-                <= DateTime.Now)
-            {
+            if (_repository.GetById(appointment.AppointmentId) != null)
                 throw new HospitalException(
-                    "Date must be in the future.");
-            }
+                    $"Appointment with ID {appointment.AppointmentId} already exists.");
 
-            appointment.Status =
-                AppointmentStatus.Scheduled;
+            appointment.Status = AppointmentStatus.Scheduled;
 
-            repo.Add(appointment);
+            _repository.Add(appointment);
+
+            _auditLogService.Log(
+                "CREATE",
+                "Appointment",
+                appointment.AppointmentId,
+                $"Appointment {appointment.AppointmentId} was created.");
         }
 
+        // IMPORTANT: Menu.cs uses GetAll()
         public List<Appointment> GetAll()
         {
-            return repo.GetAll();
+            return _repository.GetAll();
         }
 
+        // IMPORTANT: Menu.cs uses GetById()
         public Appointment? GetById(string id)
         {
-            return repo.GetById(id);
+            if (string.IsNullOrWhiteSpace(id))
+                throw new HospitalException(
+                    "Appointment ID is required.");
+
+            return _repository.GetById(id);
         }
 
+        // IMPORTANT: Menu.cs uses Reschedule()
         public void Reschedule(
             string id,
-            DateTime dateTime)
+            DateTime newDateTime)
         {
-            Appointment? appointment =
-                repo.GetById(id);
+            Appointment? appointment = _repository.GetById(id);
 
             if (appointment == null)
-            {
                 throw new HospitalException(
-                    "Appointment not found.");
-            }
+                    $"Appointment with ID {id} not found.");
 
-            if (appointment.Status !=
-                AppointmentStatus.Scheduled)
-            {
+            if (appointment.Status != AppointmentStatus.Scheduled)
                 throw new HospitalException(
-                    "Only scheduled appointments " +
-                    "can be rescheduled.");
-            }
+                    "Only scheduled appointments can be rescheduled.");
 
-            if (dateTime <= DateTime.Now)
-            {
+            if (newDateTime <= DateTime.Now)
                 throw new HospitalException(
-                    "Date must be in the future.");
-            }
+                    "New appointment date and time must be in the future.");
 
-            appointment.AppointmentDateTime =
-                dateTime;
+            appointment.AppointmentDateTime = newDateTime;
 
-            repo.Update(appointment);
+            _repository.Update(appointment);
+
+            _auditLogService.Log(
+                "RESCHEDULE",
+                "Appointment",
+                appointment.AppointmentId,
+                $"Appointment {appointment.AppointmentId} was rescheduled to {newDateTime}.");
         }
 
+        // IMPORTANT: Menu.cs uses Cancel()
         public void Cancel(string id)
         {
-            Appointment? appointment =
-                repo.GetById(id);
+            Appointment? appointment = _repository.GetById(id);
 
             if (appointment == null)
-            {
                 throw new HospitalException(
-                    "Appointment not found.");
-            }
+                    $"Appointment with ID {id} not found.");
 
-            if (appointment.Status !=
-                AppointmentStatus.Scheduled)
-            {
+            if (appointment.Status != AppointmentStatus.Scheduled)
                 throw new HospitalException(
-                    "Only scheduled appointments " +
-                    "can be cancelled.");
-            }
+                    "Only scheduled appointments can be cancelled.");
 
-            appointment.Status =
-                AppointmentStatus.Cancelled;
+            appointment.Status = AppointmentStatus.Cancelled;
 
-            repo.Update(appointment);
+            _repository.Update(appointment);
+
+            _auditLogService.Log(
+                "CANCEL",
+                "Appointment",
+                appointment.AppointmentId,
+                $"Appointment {appointment.AppointmentId} was cancelled.");
         }
 
+        // IMPORTANT: Menu.cs uses Complete()
         public void Complete(string id)
         {
-            Appointment? appointment =
-                repo.GetById(id);
+            Appointment? appointment = _repository.GetById(id);
 
             if (appointment == null)
-            {
                 throw new HospitalException(
-                    "Appointment not found.");
-            }
+                    $"Appointment with ID {id} not found.");
 
-            if (appointment.Status !=
-                AppointmentStatus.Scheduled)
-            {
+            if (appointment.Status != AppointmentStatus.Scheduled)
                 throw new HospitalException(
-                    "Only scheduled appointments " +
-                    "can be completed.");
-            }
+                    "Only scheduled appointments can be completed.");
 
-            appointment.Status =
-                AppointmentStatus.Completed;
+            appointment.Status = AppointmentStatus.Completed;
 
-            repo.Update(appointment);
+            _repository.Update(appointment);
+
+            _auditLogService.Log(
+                "COMPLETE",
+                "Appointment",
+                appointment.AppointmentId,
+                $"Appointment {appointment.AppointmentId} was completed.");
         }
     }
 }
